@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
         build-essential \
         libglib2.0-0 \
         python3 \
+        python3-dev \
+        python3-pip \
         git \
         bc \
         dc \
@@ -37,14 +39,15 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
         libxrandr2 \
         libxrender1 \
         tcsh \
+        gnupg \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# needs: fsl, freesurfer, workbench, ants, c3d affine
-RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && rm -f get-pip.py
+RUN pip3 install setuptools wheel && pip3 install nipype
 
 # get neurodebian repos
-wget -O- http://neuro.debian.net/lists/bionic.us-ca.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.listRUN apt-key adv --recv-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9
+RUN wget -O- http://neuro.debian.net/lists/bionic.us-ca.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
+RUN apt-key adv --recv-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9
 RUN apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && localedef --force --inputfile=en_US --charmap=UTF-8 C.UTF-8 \
@@ -58,11 +61,10 @@ RUN apt-get clean \
     && chmod -R 777 /neurodocker && chmod a+s /neurodocker
 
 # workbench
-RUN apt-get update && apt-get install \
+RUN apt-get update && apt-get install -yq --no-install-recommends \
     ants \
     connectome-workbench \
-    fsl-5.0-core \
-    python-nipype
+    fsl-5.0-core
 
 RUN echo "Downloading C3D ..." \
     && mkdir /opt/c3d \
@@ -98,6 +100,7 @@ WORKDIR /opt/dcan-tools
 RUN git clone -b 'v0.0.0' --single-branch --depth 1 https://github.com/DCAN-Labs/ExecutiveSummary.git executivesummary
 
 COPY ["app", "/app"]
+COPY ["./SetupEnv.sh", "/SetupEnv.sh"]
 COPY ["./entrypoint.sh", "/entrypoint.sh"]
 COPY ["LICENSE", "/LICENSE"]
 ENTRYPOINT ["/entrypoint.sh"]

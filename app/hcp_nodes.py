@@ -3,7 +3,7 @@ import os
 from nipype.interfaces.base import (traits, TraitedSpec, CommandLineInputSpec,
                                     CommandLine, File, Directory)
 
-here = os.path.dirname(os.path.realpath(__file__))
+here = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'HCPmod')
 
 
 class PostFreeSuferInputSpec(CommandLineInputSpec):
