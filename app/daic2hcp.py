@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-__doc__ = \
-"""converts from DAIC fMRI preprocessing outputs to surface-based HCP ouputs.
+__doc__ = """converts from DAIC fMRI preprocessing outputs to surface-based HCP 
+    ouputs.
 
-converts all FreeSurfer outputs into CIFTIs, computes a nonlinear mapping to
-MNI space using ANTs as well as surface-based Conte69/fsLR and projects fMRI 
-data onto fsLR/MNI grayordinates. Not using MSM."""
+    converts all FreeSurfer outputs into CIFTIs, computes a nonlinear mapping 
+    to MNI space using ANTs as well as surface-based Conte69/fsLR and projects 
+    fMRI data onto fsLR/MNI grayordinates."""
 __version__ = 'v0.0.0'
 
 import argparse
@@ -21,16 +21,29 @@ from hcp_nodes import (PostFreeSurfer, FMRISurface, ExecutiveSummary)
 
 
 def generate_parser():
+    """
+    creates argparser for module
+    :return: argparse.ArgumentParser
+    """
     parser = argparse.ArgumentParser(
         prog='daic2hcp',
         description=__doc__
     )
     parser.add_argument('output_dir', default='./files', help='path to outputs')
-    parser.add_argument('--mriproc', type=str, help='daic mriproc directory')
-    parser.add_argument('--boldproc', type=str, help='daic boldproc directory')
-    parser.add_argument('--fsurf', type=str, help='daic freesurfer directory')
+    parser.add_argument('--mriproc', type=str, required=True,
+                        help='daic mriproc directory')
+    parser.add_argument('--boldproc', type=str, required=True,
+                        help='daic boldproc directory')
+    parser.add_argument('--fsurf', type=str, required=True,
+                        help='daic freesurfer directory')
     parser.add_argument('--ncpus', type=int, default=1,
                         help='number of cores to use for parallel processing.')
+    parser.add_argument(
+        '--task-map', type=argparse.FileType('r'),
+        help='configuration file in json format for mapping BOLD# to resting '
+             'state or task name and run number. e.g. { "BOLD15": "rest04", '
+             '"BOLD16": "mid01", ... }'
+    )
     parser.add_argument('--tmpfs', action='store_true',
                         help='use temp space for intermediate file creation')
 
@@ -38,6 +51,9 @@ def generate_parser():
 
 
 def main():
+    """
+    main script
+    """
     # read in args
     parser = generate_parser()
     args = parser.parse_args()
@@ -59,13 +75,23 @@ def main():
                                              'wmparc.mgz'))
     fmri_files = sorted(map(os.path.abspath, glob(os.path.join(
         boldprocdir, 'BOLD[0-9]*_for_corr_resBOLD.mgz'))))
+    rs_files = sorted(map(os.path.abspath, glob(os.path.join(
+        boldprocdir, 'rsBOLD_analysis', 'rsBOLD_data_scan[0-9].mgz'))))
+
+    # check inputs
+    for path in mriprocdir, freesurfer_dir, boldprocdir, t1w_file, t2w_file, \
+                mask_file:
+        assert os.path.exists(path), '%s not found!' % path
+    assert len(fmri_files), 'files matching %s pattern were not found' % \
+                            os.path.join(boldprocdir,
+                                         'BOLD[0-9]*_for_corr_resBOLD.mgz')
 
     # generate daic2hcp workflow
     wf = generate_workflow(workflow_name=parser.prog, subjectid='subjectid',
                            output_dir=output_dir, t1w_file=t1w_file,
                            t2w_file=t2w_file, fmri_files=fmri_files,
-                           mask_file=mask_file, fs_source_dir=freesurfer_dir,
-                           base_dir=base_dir)
+                           rs_files=rs_files, mask_file=mask_file,
+                           fs_source_dir=freesurfer_dir, base_dir=base_dir)
     if args.ncpus > 1:
         wf.run(plugin='MultiProc', plugin_args={'n_procs': args.ncpus})
     else:
@@ -151,7 +177,8 @@ def generate_workflow(**inputs):
     :param t1w_file: t1w mgz file in some space
     :param t2w_file: t2w mgz file aligned to t1w
     :param mask_file: mask or brain mgz file aligned to t1w
-    :param fmri_files: list of fmri mgz files aligned to t1w
+    :param fmri_files: list of fmri mgz files
+    :param rs_files: list of fc-preprocessed resting state fmri mgz files
     :param output_dir: desired output "HCP" directory
     :return: nipype workflow
     """
@@ -167,8 +194,8 @@ def generate_workflow(**inputs):
         fields=['t1w_file', 't2w_file', 'mask_file']),
         name='input_spec'
     )
-    func_spec = pe.Node(nipype.IdentityInterface(fields=['fmri_file']),
-                        name='input_func_spec')
+    input_func_spec = pe.Node(nipype.IdentityInterface(fields=['fmri_file']),
+                              name='input_func_spec')
     hcp_spec = pe.Node(nipype.IdentityInterface(
         fields=['t1w', 't2w', 't1w_acpc_xfm', 't2w_acpc_xfm',
                 't2w_to_t1w_xfm', 't1w_distortion', 't2w_distortion',
@@ -178,13 +205,14 @@ def generate_workflow(**inputs):
         name='hcp_spec'
     )
 
-    # input DAIC files
+    # connect input DAIC files
     input_spec.inputs.t1w_file = inputs['t1w_file']
     input_spec.inputs.t2w_file = inputs['t2w_file']
     input_spec.inputs.mask_file = inputs['mask_file']
-    func_spec.iterables = [('fmri_file', inputs['fmri_files'])]
+    input_func_spec.iterables = ('fmri_file', inputs['fmri_files'] + inputs[
+        'rs_files'])
 
-    # output HCP directory structure
+    # setup HCP directory specification
     output_dir = os.path.abspath(inputs['output_dir'])
     subjects_dir = os.path.join(output_dir, 'T1w')
     freesurfer_dir = os.path.join(subjects_dir, subject_id)
@@ -195,6 +223,8 @@ def generate_workflow(**inputs):
     results_dir = os.path.join(nonlinear_dir, 'Results')
     nonlin_xfms_dir = os.path.join(nonlinear_dir, 'xfms')
     fs_transforms = os.path.join(freesurfer_dir, 'mri', 'transforms')
+
+    # create directory tree
     for directory in [output_dir, subjects_dir, native_xfms_dir, t2w_dir,
                       t2w_xfms_dir, results_dir, nonlin_xfms_dir]:
         os.makedirs(directory, exist_ok=True)
@@ -240,8 +270,30 @@ def generate_workflow(**inputs):
     hcp_spec.inputs.wmparc_1mm = os.path.join(subjects_dir, 'wmparc_1mm.nii.gz')
     hcp_spec.inputs.warp = os.path.join(nonlin_xfms_dir, 'fs2standard.nii.gz')
 
-    ## workflow components
+    ## create workflow components
+
     # utility
+    def rename_func(in_file, path):
+        import re
+        import shutil
+        func_pattern = re.compile(r'(?P<name>BOLD[0-9]*).*')
+        fc_pattern = re.compile(r'rsBOLD_data_scan(?P<number>[0-9]*).nii.gz')
+        basename = os.path.basename(in_file)
+        in_file = func_pattern.match(basename)
+        number = fc_pattern.match(basename)
+        if in_file:
+            taskname = 'task-%s' % in_file.groupdict('name')
+        elif number:
+            taskname = 'task-fcproc%s' % number.groupdict('number')
+        out_file = os.path.join(path, 'MNINonLinear', 'Results',
+                               taskname, taskname + '.nii.gz')
+        shutil.copyfile(in_file, out_file)
+        return out_file
+    rename = pe.Node(utility.Function(input_names=['in_file', 'path'],
+                                      output_names=['out_file'],
+                                      function=rename_func),
+                     name='rename')
+    rename.inputs.path = os.path.abspath(output_dir)
     copy_str = 'def f(src, dest): shutil.copy(src, dest); return dest'
     copy = pe.Node(
         utility.Function(
@@ -258,13 +310,15 @@ def generate_workflow(**inputs):
         ),
         name='basename'
     )
+
     # mri convert
     convert_t1 = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
                          name='convert_t1')
     convert_t2 = convert_t1.clone(name='convert_t2')
     convert_mask = convert_t1.clone(name='convert_mask')
     convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
-                           name='convert_func')
+                           iterables=['in_file'], name='convert_func')
+
     # acpc alignment
     calc_acpc = pe.Node(
         fsl.FLIRT(reference=reference, dof=6, interp='spline'),
@@ -283,37 +337,37 @@ def generate_workflow(**inputs):
     )
     mask_t1w = pe.Node(fsl.ApplyMask(), name='mask_t1w')
     mask_t2w = pe.Node(fsl.ApplyMask(), name='mask_t2w')
-    resample_mask = pe.Node(fsl.FLIRT(apply_isoxfm=1,
-                                      interp='nearestneighbour'),
-                            name='resample_mask')
+    resample_mask = pe.Node(
+        fsl.FLIRT(apply_isoxfm=1, interp='nearestneighbour'),
+        name='resample_mask'
+    )
+
     # functional transforms
     select_first = pe.JoinNode(
         utility.Select(index=[0]),
         joinsource='input_func_spec',
-        joinfield='inlist',
-        name='select_first')
+        name='select_first'
+    )
     fs_to_fmri = pe.Node(fsl.FLIRT(cost='mutualinfo', dof=6), name='fs_to_func')
     fmri_to_fs = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='func_to_fs')
-    concat_warps = pe.Node(fsl.ConvertWarp(relwarp=True, out_relwarp=True,
-                                           reference=reference2mm),
-                           name='concat_warps')
+    concat_warps = pe.Node(
+        fsl.ConvertWarp(relwarp=True, out_relwarp=True, reference=reference2mm),
+        name='concat_warps'
+    )
+    warp_mask = pe.Node(
+        fsl.ApplyWarp(ref_file=reference2mm, interp='nn', relwarp=True),
+        name='warp_mask'
+    )
+    mask_func = pe.Node(fsl.ApplyMask(), name='apply_mask')
     apply_warpfield = pe.Node(
         fsl.ApplyWarp(ref_file=reference2mm, interp='spline', relwarp=True),
-        name='apply_warpfield')
-    rename = pe.Node(
-        # this must be consistent with get_name function defined in this scope
-        utility.Rename(parse_string=r'(?P<name>BOLD[0-9]*).*',
-                       format_string='%(path)s/MNINonLinear/Results/'
-                                     'task-%(name)s/task-%(name)s.nii.gz',
-                       path=os.path.abspath(output_dir)),
-        name='rename'
+        name='apply_warpfield'
     )
-    rename.inputs.path = os.path.abspath(output_dir)
     timeseries_mean = pe.Node(
         fsl.MeanImage(dimension='T'), name='timeseries_mean'
     )
     renamesb = pe.Node(
-        utility.Rename(parse_string=r'(?P<name>BOLD[0-9]*).*',
+        utility.Rename(parse_string=r'task-(?P<name>.*)_.*',
                        format_string='%(path)s/MNINonLinear/Results/'
                                      'task-%(name)s/task-%(name)s_SBRef.nii.gz',
                        path=os.path.abspath(output_dir)),
@@ -342,11 +396,11 @@ def generate_workflow(**inputs):
                          in_subjectid=subject_id,
                          in_executivesummary='executivesummary'),
         joinfield='in_files',
-        joinsource='input_func_spec',
+        joinsource='iterfunc',
         name='executivesummary'
     )
 
-    ## workflow
+    ## workflow DAG
     wf = pe.Workflow(name=inputs['workflow_name'], base_dir=inputs['base_dir'])
 
     # convert to nii.gz
@@ -399,7 +453,7 @@ def generate_workflow(**inputs):
     # @TODO leverage SELECT and RENAME utilities with Don's information. In
     #  the interim, functional data is simply named as task-BOLD##
     wf.connect(
-        [(func_spec, convert_func, [('fmri_file', 'in_file')]),
+        [(input_func_spec, convert_func, [('out', 'in_file')]),
          (convert_func, select_first, [('out_file', 'inlist')]),
          (convert_t1, fs_to_fmri, [('out_file', 'in_file')]),
          (select_first, fs_to_fmri, [('out', 'reference')]),
@@ -408,14 +462,18 @@ def generate_workflow(**inputs):
          (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
          (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
          (convert_func, apply_warpfield, [('out_file', 'in_file')]),
-         (apply_warpfield, timeseries_mean, [('out_file', 'in_file')])]
+         (convert_mask, warp_mask, [('out_file', 'in_file')]),
+         (postfreesurfer, warp_mask, [('out_warp', 'field_file')]),
+         (warp_mask, mask_func, [('out_file', 'mask_file')]),
+         (apply_warpfield, mask_func, [('out_file', 'in_file')])]
     )
     # connect fmrisurface
     # there are more implicit connections, but these suffice dependency graph
     wf.connect(
-        [(apply_warpfield, rename, [('out_file', 'in_file')]),
-         (rename, fmrisurface, [('out_file', 'in_fmri')]),
-         (rename, basename, [('out_file', 'path')]),
+        [(mask_func, rename, [('out_file', 'in_file')]),
+         (rename, timeseries_mean, [('fmri_file', 'in_file')]),
+         (rename, fmrisurface, [('fmri_file', 'in_fmri')]),
+         (rename, basename, [('fmri_file', 'path')]),
          (basename, fmrisurface, [('out_name', 'fmriname')]),
          (timeseries_mean, renamesb, [('out_file', 'in_file')]),
          (renamesb, fmrisurface, [('out_file', 'in_sbref')])]
@@ -425,9 +483,10 @@ def generate_workflow(**inputs):
         [(fmrisurface, executivesummary, [('out_file', 'in_files')])]
     )
 
-    wf.write_graph()
+    # draw workflow: output/daic2hcp/graph.png
+    wf.write_graph(graph2use='orig', dotfilename='graph.dot')
 
-    # connect outputs to static hcp filename specifications (not shown in graph)
+    # connect intermediates to hcp filename specifications (not shown in graph)
     wf.connect(
         [(hcp_spec, convert_t1, [('t1w', 'out_file')]),
          (hcp_spec, convert_t2, [('t2w', 'out_file')]),
