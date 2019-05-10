@@ -38,12 +38,6 @@ def generate_parser():
                         help='daic freesurfer directory')
     parser.add_argument('--ncpus', type=int, default=1,
                         help='number of cores to use for parallel processing.')
-    parser.add_argument(
-        '--task-map', type=argparse.FileType('r'),
-        help='configuration file in json format for mapping BOLD# to resting '
-             'state or task name and run number. e.g. { "BOLD15": "rest04", '
-             '"BOLD16": "mid01", ... }'
-    )
     parser.add_argument('--tmpfs', action='store_true',
                         help='use temp space for intermediate file creation')
 
@@ -317,7 +311,7 @@ def generate_workflow(**inputs):
     convert_t2 = convert_t1.clone(name='convert_t2')
     convert_mask = convert_t1.clone(name='convert_mask')
     convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
-                           iterables=['in_file'], name='convert_func')
+                           name='convert_func')
 
     # acpc alignment
     calc_acpc = pe.Node(
@@ -346,6 +340,7 @@ def generate_workflow(**inputs):
     select_first = pe.JoinNode(
         utility.Select(index=[0]),
         joinsource='input_func_spec',
+        joinfield='inlist',
         name='select_first'
     )
     fs_to_fmri = pe.Node(fsl.FLIRT(cost='mutualinfo', dof=6), name='fs_to_func')
@@ -453,7 +448,7 @@ def generate_workflow(**inputs):
     # @TODO leverage SELECT and RENAME utilities with Don's information. In
     #  the interim, functional data is simply named as task-BOLD##
     wf.connect(
-        [(input_func_spec, convert_func, [('out', 'in_file')]),
+        [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
          (convert_func, select_first, [('out_file', 'inlist')]),
          (convert_t1, fs_to_fmri, [('out_file', 'in_file')]),
          (select_first, fs_to_fmri, [('out', 'reference')]),
@@ -471,9 +466,9 @@ def generate_workflow(**inputs):
     # there are more implicit connections, but these suffice dependency graph
     wf.connect(
         [(mask_func, rename, [('out_file', 'in_file')]),
-         (rename, timeseries_mean, [('fmri_file', 'in_file')]),
-         (rename, fmrisurface, [('fmri_file', 'in_fmri')]),
-         (rename, basename, [('fmri_file', 'path')]),
+         (rename, timeseries_mean, [('out_file', 'in_file')]),
+         (rename, fmrisurface, [('out_file', 'in_fmri')]),
+         (rename, basename, [('out_file', 'path')]),
          (basename, fmrisurface, [('out_name', 'fmriname')]),
          (timeseries_mean, renamesb, [('out_file', 'in_file')]),
          (renamesb, fmrisurface, [('out_file', 'in_sbref')])]
