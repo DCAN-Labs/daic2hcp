@@ -27,15 +27,23 @@ def generate_parser():
     """
     parser = argparse.ArgumentParser(
         prog='daic2hcp',
-        description=__doc__
+        description=__doc__,
+        epilog="""example: daic2hcp.py /home/user/foobar/daic_convert 
+        --mriproc=/home/user/foobar/MRIPROC 
+        --boldproc=/home/user/foobar/BOLDPROC 
+        --fsurf=/home/user/foobar/FSURF --ncpus 10"""
     )
     parser.add_argument('output_dir', default='./files', help='path to outputs')
-    parser.add_argument('--mriproc', type=str, required=True,
+    req = parser.add_argument_group('required argumenets')
+    req.add_argument('--mriproc', type=str, required=True,
                         help='daic mriproc directory')
-    parser.add_argument('--boldproc', type=str, required=True,
+    req.add_argument('--boldproc', type=str, required=True,
                         help='daic boldproc directory')
-    parser.add_argument('--fsurf', type=str, required=True,
+    req.add_argument('--fsurf', type=str, required=True,
                         help='daic freesurfer directory')
+    parser.add_argument('--subject-id', type=str, default='subjectid',
+                        help='optional freesurfer subject id. Defaults to '
+                             '"subjectid"')
     parser.add_argument('--ncpus', type=int, default=1,
                         help='number of cores to use for parallel processing.')
     parser.add_argument('--tmpfs', action='store_true',
@@ -81,7 +89,7 @@ def main():
                                          'BOLD[0-9]*_for_corr_resBOLD.mgz')
 
     # generate daic2hcp workflow
-    wf = generate_workflow(workflow_name=parser.prog, subjectid='subjectid',
+    wf = generate_workflow(workflow_name=parser.prog, subjectid=args.subject_id,
                            output_dir=output_dir, t1w_file=t1w_file,
                            t2w_file=t2w_file, fmri_files=fmri_files,
                            rs_files=rs_files, mask_file=mask_file,
@@ -93,6 +101,13 @@ def main():
 
 
 def create_hcp_nodes(output_dir, subject_id):
+    """
+    generates PostFreeSurfer and fMRISurface Nodes for connecting HCP cifti
+    processing.
+    :param output_dir: path to output files.
+    :param subject_id: freesurfer subject id.
+    :return:
+    """
     # parameters:
     surfatlasdir = os.environ['HCPPIPEDIR_Templates'] + "/standard_mesh_atlases"
     grayordinatesdir = os.environ[
@@ -228,12 +243,17 @@ def generate_workflow(**inputs):
 
     def get_name(x):
         boldid = re.compile(r'(BOLD[0-9]*).*')
+        number = re.compile(r'rsBOLD_data_scan([0-9]*).*')
         basename = os.path.basename(x).split('.')[0]
-        name = boldid.match(basename).groups()[0]
+        match = boldid.match(basename)
+        if match is not None:
+            name = match.groups()[0]
+        else:
+            name = 'fcproc%s' % number.match(basename).groups()[0]
         taskname = 'task-%s' % name
         return taskname
 
-    fmrinames = map(get_name, inputs['fmri_files'])
+    fmrinames = map(get_name, inputs['fmri_files'] + inputs['rs_files'])
     for fmriname in fmrinames:
         directory = os.path.join(results_dir, fmriname)
         os.makedirs(directory, exist_ok=True)
@@ -268,17 +288,19 @@ def generate_workflow(**inputs):
 
     # utility
     def rename_func(in_file, path):
+        # conditional renaming for func, fcpreproc data handled separately
+        import os
         import re
         import shutil
         func_pattern = re.compile(r'(?P<name>BOLD[0-9]*).*')
-        fc_pattern = re.compile(r'rsBOLD_data_scan(?P<number>[0-9]*).nii.gz')
+        fc_pattern = re.compile(r'rsBOLD_data_scan(?P<number>[0-9]*).*')
         basename = os.path.basename(in_file)
-        in_file = func_pattern.match(basename)
+        name = func_pattern.match(basename)
         number = fc_pattern.match(basename)
-        if in_file:
-            taskname = 'task-%s' % in_file.groupdict('name')
+        if name:
+            taskname = 'task-%s' % name.groupdict()['name']
         elif number:
-            taskname = 'task-fcproc%s' % number.groupdict('number')
+            taskname = 'task-fcproc%s' % number.groupdict()['number']
         out_file = os.path.join(path, 'MNINonLinear', 'Results',
                                taskname, taskname + '.nii.gz')
         shutil.copyfile(in_file, out_file)
@@ -391,7 +413,7 @@ def generate_workflow(**inputs):
                          in_subjectid=subject_id,
                          in_executivesummary='executivesummary'),
         joinfield='in_files',
-        joinsource='iterfunc',
+        joinsource='input_func_spec',
         name='executivesummary'
     )
 

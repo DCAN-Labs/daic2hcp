@@ -41,7 +41,7 @@ export MSMBin=${HCPPIPEDIR}/MSMBinaries
 export MCRROOT=/home/exacloud/lustre1/fnl_lab/code/external/utilities/matlab_runtime/v91
 export DCANBOLDPROCDIR=/home/exacloud/lustre1/fnl_lab/code/internal/utilities/DCAN_bold_proc
 export DCANBOLDPROCVER=DCANBOLDProc_v4.0.0
-export EXECSUMDIR=executivesummary
+export EXECSUMDIR=$(dirname $(readlink -f "${BASH_SOURCE[0]}"))"/executivesummary"
 export ABCDTASKPREPDIR=/home/exacloud/lustre1/fnl_lab/code/internal/utilities/ABCD_tfMRI
 export CUSTOMCLEANDIR=/home/exacloud/lustre1/fnl_lab/code/internal/utilities/custom-clean
 

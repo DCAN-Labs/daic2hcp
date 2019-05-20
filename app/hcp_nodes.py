@@ -123,7 +123,7 @@ class ExecutiveSummaryOutputSpec(TraitedSpec):
 
 
 class ExecutiveSummary(CommandLine):
-    _cmd = os.path.join(here, 'executivesummary', 'summary_tools',
+    _cmd = os.path.join(os.environ['EXECSUMDIR'], 'summary_tools',
                         'executivesummary_wrapper.sh')
     input_spec = ExecutiveSummaryInputSpec
     output_spec = ExecutiveSummaryOutputSpec
