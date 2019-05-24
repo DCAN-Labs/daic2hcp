@@ -7,46 +7,50 @@ ENV LANG="en_US.UTF-8" \
     ND_ENTRYPOINT="/neurodocker/startup.sh"
 RUN apt-get update && apt-get install -yq --no-install-recommends \
         apt-utils \
+        bc \
+        build-essential \
         bzip2 \
         ca-certificates \
         curl \
-        dirmngr\
-        locales \
-        rsync \
-        unzip \
-        wget \
-        make \
-        m4 \
-        build-essential \
-        libglib2.0-0 \
-        python3 \
-        python3-dev \
-        python3-pip \
-        git \
-        bc \
         dc \
+        dirmngr\
+        git \
+        gnupg2 \
+        graphviz \
         libgomp1 \
         libxmu6 \
         libxt6 \
         libfontconfig1 \
         libfreetype6 \
+        libglib2.0.0 \
         libgl1-mesa-dev \
         libglu1-mesa-dev \
+        libgraphviz-dev \
         libice6 \
+        libssl1.0.0 \
+        libssl-dev \
         libxcursor1 \
         libxft2 \
         libxinerama1 \
         libxrandr2 \
         libxrender1 \
+        locales \
+        make \
+        m4 \
+        python3 \
+        python3-dev \
+        python3-pip \
+        rsync \
+        unzip \
         tcsh \
-        gnupg \
+        wget \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN pip3 install setuptools wheel && pip3 install nipype
+RUN pip3 install setuptools wheel && pip3 install nipype graphviz pygraphviz pydot
 
 # get neurodebian repos
-RUN wget -O- http://neuro.debian.net/lists/bionic.us-ca.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
+RUN wget -O- http://neuro.debian.net/lists/bionic.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list
 RUN apt-key adv --recv-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || \
     apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9
 RUN apt-get clean \
@@ -105,5 +109,5 @@ COPY ["./SetupEnv.sh", "/SetupEnv.sh"]
 COPY ["./entrypoint.sh", "/entrypoint.sh"]
 COPY ["LICENSE", "/LICENSE"]
 ENTRYPOINT ["/entrypoint.sh"]
-WORKDIR /tmp
+WORKDIR /output
 CMD ["--help"]

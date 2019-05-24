@@ -67,6 +67,7 @@ def main():
     if args.tmpfs:
         base_dir = None
     else:
+        os.chdir(output_dir)
         base_dir = output_dir
 
     # naming specifications from DAIC
