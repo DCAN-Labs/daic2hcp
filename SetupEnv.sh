@@ -31,7 +31,7 @@ export MSMBin=${HCPPIPEDIR}/MSMBinaries
 
 
 # Set up DCAN Environment Variables
-export EXECSUMDIR=/opt/executivesummary
+export EXECSUMDIR=/opt/dcan-tools/executivesummary
 
 # binary dependencies
 export ANTSPATH=/usr/lib/ants
