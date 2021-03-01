@@ -47,7 +47,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
         && apt-get clean \
         && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN pip3 install setuptools wheel && pip3 install nipype graphviz pygraphviz pydot
+RUN pip3 install setuptools wheel && \
+    pip3 install nipype graphviz pygraphviz pydot Pillow
 
 # get neurodebian repos
 RUN wget -O- http://neuro.debian.net/lists/bionic.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list
