@@ -410,7 +410,7 @@ def generate_workflow(**inputs):
     postfreesurfer, fmrisurface = create_hcp_nodes(output_dir, subject_id)
     executivesummary = pe.JoinNode(
         ExecutiveSummary(in_processed=os.path.abspath(output_dir),
-                         in_subjectid=subject_id)
+                         in_subjectid=subject_id),
         joinfield='in_files',
         joinsource='input_func_spec',
         name='executivesummary'
