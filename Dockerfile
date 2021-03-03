@@ -105,7 +105,7 @@ ENV FREESURFER_HOME=/opt/freesurfer
 
 RUN mkdir -p /opt/dcan-tools /mriproc /boldproc /fsurf /output /app
 WORKDIR /opt/dcan-tools
-RUN git clone -b 'v0.0.0' --single-branch --depth 1 https://github.com/DCAN-Labs/ExecutiveSummary.git executivesummary
+RUN git clone -b 'v2.2.5' --single-branch --depth 1 https://github.com/DCAN-Labs/ExecutiveSummary.git executivesummary
 
 COPY ["app", "/app"]
 COPY ["./SetupEnv.sh", "/SetupEnv.sh"]
