@@ -112,10 +112,8 @@ class FMRISurface(CommandLine):
 
 class ExecutiveSummaryInputSpec(CommandLineInputSpec):
     in_files = traits.List()
-    in_unprocessed = Directory(exists=True, argstr='--unproc_root=%s')
-    in_processed = Directory(exists=True, argstr='--deriv_root=%s')
-    in_subjectid = traits.Str(argstr='--subject_id=%s')
-    in_executivesummary = traits.Str(argstr='--ex_summ_dir=%s')
+    in_processed = Directory(exists=True, argstr='--output-dir=%s')
+    in_subjectid = traits.Str(argstr='--subject-id=%s')
 
 
 class ExecutiveSummaryOutputSpec(TraitedSpec):
@@ -123,7 +121,8 @@ class ExecutiveSummaryOutputSpec(TraitedSpec):
 
 
 class ExecutiveSummary(CommandLine):
-    _cmd = os.path.join(os.environ['EXECSUMDIR'], 'summary_tools',
-                        'executivesummary_wrapper.sh')
+    _cmd = os.path.join(os.environ['EXECSUMDIR'],
+                        'executivesummary_preproc.sh',
+                        '--bids-input=NONE')
     input_spec = ExecutiveSummaryInputSpec
     output_spec = ExecutiveSummaryOutputSpec
