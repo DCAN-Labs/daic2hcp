@@ -105,9 +105,9 @@ ENV FREESURFER_HOME=/opt/freesurfer
 
 RUN mkdir -p /opt/dcan-tools /mriproc /boldproc /fsurf /output /app
 WORKDIR /opt/dcan-tools
-RUN git clone -b 'v2.2.5' --single-branch --depth 1 https://github.com/DCAN-Labs/ExecutiveSummary.git executivesummary
+RUN git clone -b 'v2.2.6' --single-branch --depth 1 https://github.com/DCAN-Labs/ExecutiveSummary.git executivesummary
 # unzip template file
-RUN gunzip /opt/dcan-tools/executivesummary/summary_tools/templates/parasagittal_Tx_169_template.scene.gz
+RUN gunzip /opt/dcan-tools/executivesummary/templates/parasagittal_Tx_169_template.scene.gz
 
 COPY ["app", "/app"]
 COPY ["./SetupEnv.sh", "/SetupEnv.sh"]
