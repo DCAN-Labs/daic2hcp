@@ -1,3 +1,3 @@
 #!/bin/bash
-source /SetupEnv.sh
+. /SetupEnv.sh
 python3 /app/daic2hcp.py "$@"
