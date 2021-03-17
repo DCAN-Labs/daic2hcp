@@ -432,7 +432,7 @@ def generate_workflow(**inputs):
          (input_spec, convert_mask, [('mask_file', 'in_file')]),
          (convert_t1, reorient_t1, [('out_file', 'in_file')]),
          (convert_t2, reorient_t2, [('out_file', 'in_file')]),
-         (convert_mask, reorient_mask, , [('out_file', 'in_file')])]
+         (convert_mask, reorient_mask, [('out_file', 'in_file')])]
     )
     # rigid align to acpc/MNI, apply mask
     wf.connect(
