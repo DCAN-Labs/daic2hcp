@@ -336,6 +336,12 @@ def generate_workflow(**inputs):
     convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
                            name='convert_func')
 
+    # fsl reorient to standard
+    reorient_t1 = pe.Node(fsl.Reorient2Std(), name='reorient_t1')
+    reorient_t2 = pe.Node(fsl.Reorient2Std(), name='reorient_t2')
+    reorient_mask = pe.Node(fsl.Reorient2Std(), name='reorient_mask')
+    reorient_func = pe.Node(fsl.Reorient2Std(), name='reorient_func')
+    
     # acpc alignment
     calc_acpc = pe.Node(
         fsl.FLIRT(reference=reference, dof=6, interp='spline'),
@@ -394,7 +400,7 @@ def generate_workflow(**inputs):
     renamesb.inputs.path = os.path.abspath(output_dir)
 
     # identity transforms
-    identity_matrix = pe.Node(fsl.preprocess.FLIRT(),
+    identity_matrix = pe.Node(fsl.FLIRT(),
                               name='identity_matrix')  # t1 -> t1 matrix
     zeroes = pe.Node(fsl.BinaryMaths(operation='mul', operand_value=0),
                      name='zeroes')
@@ -423,17 +429,20 @@ def generate_workflow(**inputs):
     wf.connect(
         [(input_spec, convert_t1, [('t1w_file', 'in_file')]),
          (input_spec, convert_t2, [('t2w_file', 'in_file')]),
-         (input_spec, convert_mask, [('mask_file', 'in_file')])]
+         (input_spec, convert_mask, [('mask_file', 'in_file')]),
+         (convert_t1, reorient_t1, [('out_file', 'in_file')]),
+         (convert_t2, reorient_t2, [('out_file', 'in_file')]),
+         (convert_mask, reorient_mask, , [('out_file', 'in_file')])]
     )
     # rigid align to acpc/MNI, apply mask
     wf.connect(
-        [(convert_t1, calc_acpc, [('out_file', 'in_file')]),
+        [(reorient_t1, calc_acpc, [('out_file', 'in_file')]),
          (calc_acpc, copy_xfm, [('out_matrix_file', 'src')]),
          (copy_xfm, apply_acpc, [('dest', 'in_matrix_file')]),
          (calc_acpc, apply_acpc_nn, [('out_matrix_file', 'in_matrix_file')]),
-         (convert_t2, apply_acpc, [('out_file', 'in_file')]),
+         (reorient_t2, apply_acpc, [('out_file', 'in_file')]),
          (apply_acpc, copy_t2w_res, [('out_file', 'src')]),
-         (convert_mask, apply_acpc_nn, [('out_file', 'in_file')]),
+         (reorient_mask, apply_acpc_nn, [('out_file', 'in_file')]),
          (calc_acpc, mask_t1w, [('out_file', 'in_file')]),
          (apply_acpc_nn, mask_t1w, [('out_file', 'mask_file')]),
          (apply_acpc, mask_t2w, [('out_file', 'in_file')]),
@@ -470,15 +479,16 @@ def generate_workflow(**inputs):
     #  the interim, functional data is simply named as task-BOLD##
     wf.connect(
         [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
-         (convert_func, select_first, [('out_file', 'inlist')]),
-         (convert_t1, fs_to_fmri, [('out_file', 'in_file')]),
+         (convert_func, reorient_func, [('out_file', 'in_file')]),
+         (reorient_func, select_first, [('out_file', 'inlist')]),
+         (reorient_t1, fs_to_fmri, [('out_file', 'in_file')]),
          (select_first, fs_to_fmri, [('out', 'reference')]),
          (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
          (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
          (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
          (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
-         (convert_func, apply_warpfield, [('out_file', 'in_file')]),
-         (convert_mask, warp_mask, [('out_file', 'in_file')]),
+         (reorient_func, apply_warpfield, [('out_file', 'in_file')]),
+         (reorient_mask, warp_mask, [('out_file', 'in_file')]),
          (postfreesurfer, warp_mask, [('out_warp', 'field_file')]),
          (warp_mask, mask_func, [('out_file', 'mask_file')]),
          (apply_warpfield, mask_func, [('out_file', 'in_file')])]
