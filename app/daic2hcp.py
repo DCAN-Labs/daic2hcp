@@ -329,11 +329,13 @@ def generate_workflow(**inputs):
     )
 
     # mri convert
-    convert_t1 = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
+    convert_t1 = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                               out_orientation='RAS'),
                          name='convert_t1')
     convert_t2 = convert_t1.clone(name='convert_t2')
     convert_mask = convert_t1.clone(name='convert_mask')
-    convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
+    convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                                 out_orientation='RAS'),
                            name='convert_func')
 
     # acpc alignment
