@@ -332,8 +332,13 @@ def generate_workflow(**inputs):
     convert_t1 = pe.Node(freesurfer.MRIConvert(out_type='niigz',
                                                out_orientation='RAS'),
                          name='convert_t1')
-    convert_t2 = convert_t1.clone(name='convert_t2')
-    convert_mask = convert_t1.clone(name='convert_mask')
+    convert_t2 = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                               out_orientation='RAS'),
+                         name='convert_t2')
+    convert_mask = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                                 resample_type='nearest',
+                                                 out_orientation='RAS'),
+                           name='convert_mask')
     convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz',
                                                  out_orientation='RAS'),
                            name='convert_func')
