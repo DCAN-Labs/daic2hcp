@@ -345,7 +345,7 @@ def generate_workflow(**inputs):
 
     # acpc alignment
     calc_acpc = pe.Node(
-        fsl.FLIRT(reference=reference, dof=6, interp='spline'),
+        fsl.FLIRT(reference=reference, dof=6, interp='spline', no_search=True),
         name='calc_acpc'
     )
     copy_xfm = copy.clone(name='copy_xfm')
