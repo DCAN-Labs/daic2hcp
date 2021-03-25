@@ -76,8 +76,6 @@ def main():
     t2w_file = os.path.join(mriprocdir, './T2w_res.mgz')
     mask_file = os.path.abspath(os.path.join(freesurfer_dir, 'mri',
                                              'wmparc.mgz'))
-    brain_file = os.path.abspath(os.path.join(freesurfer_dir, 'mri',
-                                             'brain.mgz'))
     fmri_files = sorted(map(os.path.abspath, glob(os.path.join(
         boldprocdir, 'BOLD[0-9]*_for_corr_resBOLD.mgz'))))
     rs_files = sorted(map(os.path.abspath, glob(os.path.join(
@@ -85,7 +83,7 @@ def main():
 
     # check inputs
     for path in mriprocdir, freesurfer_dir, boldprocdir, t1w_file, t2w_file, \
-                mask_file, brain_file:
+                mask_file:
         assert os.path.exists(path), '%s not found!' % path
     assert len(fmri_files), 'files matching %s pattern were not found' % \
                             os.path.join(boldprocdir,
@@ -96,7 +94,6 @@ def main():
                            output_dir=output_dir, t1w_file=t1w_file,
                            t2w_file=t2w_file, fmri_files=fmri_files,
                            rs_files=rs_files, mask_file=mask_file,
-                           brain_file=brain_file,
                            fs_source_dir=freesurfer_dir, base_dir=base_dir)
     if args.ncpus > 1:
         wf.run(plugin='MultiProc', plugin_args={'n_procs': args.ncpus})
@@ -133,7 +130,7 @@ def create_hcp_nodes(output_dir, subject_id):
     useT2 = 'true'
     t1template = os.environ['HCPPIPEDIR_Templates'] + "/MNI152_T2_1mm.nii.gz"
     t1templatebrain = os.environ['HCPPIPEDIR_Templates'] + \
-        "/MNI152_T1_1mm_brain.nii.gz"
+        "/MNI152_T2_1mm_brain.nii.gz"
     t2template = os.environ['HCPPIPEDIR_Templates'] + "/MNI152_T2_1mm.nii.gz"
     t2templatebrain = os.environ['HCPPIPEDIR_Templates'] + \
         "/MNI152_T2_1mm_brain.nii.gz"
@@ -190,7 +187,6 @@ def generate_workflow(**inputs):
     :param t1w_file: t1w mgz file in some space
     :param t2w_file: t2w mgz file aligned to t1w
     :param mask_file: mask or brain mgz file aligned to t1w
-    :param brain_file: brain mgz used to align to reference brain
     :param fmri_files: list of fmri mgz files
     :param rs_files: list of fc-preprocessed resting state fmri mgz files
     :param output_dir: desired output "HCP" directory
@@ -200,14 +196,12 @@ def generate_workflow(**inputs):
     subject_id = inputs['subjectid']
     reference = os.path.join(os.environ['HCPPIPEDIR_Templates'],
                              'MNI152_T1_1mm.nii.gz')
-    referencebrain = os.path.join(os.environ['HCPPIPEDIR_Templates'],
-                                  'MNI152_T1_1mm_brain.nii.gz')
     reference2mm = os.path.join(os.environ['HCPPIPEDIR_Templates'],
                                 "MNI152_T1_2mm.nii.gz")
 
     # io spec
     input_spec = pe.Node(nipype.IdentityInterface(
-        fields=['t1w_file', 't2w_file', 'mask_file', 'brain_file']),
+        fields=['t1w_file', 't2w_file', 'mask_file']),
         name='input_spec'
     )
     input_func_spec = pe.Node(nipype.IdentityInterface(fields=['fmri_file']),
@@ -225,7 +219,6 @@ def generate_workflow(**inputs):
     input_spec.inputs.t1w_file = inputs['t1w_file']
     input_spec.inputs.t2w_file = inputs['t2w_file']
     input_spec.inputs.mask_file = inputs['mask_file']
-    input_spec.inputs.brain_file = inputs['brain_file']
     input_func_spec.iterables = ('fmri_file', inputs['fmri_files'] + inputs[
         'rs_files'])
 
@@ -346,16 +339,13 @@ def generate_workflow(**inputs):
                                                  resample_type='nearest',
                                                  out_orientation='RAS'),
                            name='convert_mask')
-    convert_brain = pe.Node(freesurfer.MRIConvert(out_type='niigz',
-                                                  out_orientation='RAS'),
-                           name='convert_brain')
     convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz',
                                                  out_orientation='RAS'),
                            name='convert_func')
 
     # acpc alignment
     calc_acpc = pe.Node(
-        fsl.FLIRT(reference=referencebrain, dof=6, interp='spline', no_search=True),
+        fsl.FLIRT(reference=reference, dof=6, interp='spline'),
         name='calc_acpc'
     )
     copy_xfm = copy.clone(name='copy_xfm')
@@ -440,12 +430,11 @@ def generate_workflow(**inputs):
     wf.connect(
         [(input_spec, convert_t1, [('t1w_file', 'in_file')]),
          (input_spec, convert_t2, [('t2w_file', 'in_file')]),
-         (input_spec, convert_mask, [('mask_file', 'in_file')]),
-         (input_spec, convert_brain, [('brain_file', 'in_file')])]
+         (input_spec, convert_mask, [('mask_file', 'in_file')])]
     )
     # rigid align to acpc/MNI, apply mask
     wf.connect(
-        [(convert_brain, calc_acpc, [('out_file', 'in_file')]),
+        [(convert_t1, calc_acpc, [('out_file', 'in_file')]),
          (calc_acpc, copy_xfm, [('out_matrix_file', 'src')]),
          (copy_xfm, apply_acpc, [('dest', 'in_matrix_file')]),
          (calc_acpc, apply_acpc_nn, [('out_matrix_file', 'in_matrix_file')]),
