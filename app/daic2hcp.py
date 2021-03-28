@@ -459,52 +459,52 @@ def generate_workflow(**inputs):
          (zeroes, identity_biasfield, [('out_file', 'in_file')]),
          (identity_warpfield, copy_warpfield, [('merged_file', 'src')])]
     )
-#     # connect postfreesurfer
-#     # there are more implicit connections, but these suffice dependency graph
-#     wf.connect(
-#         [(calc_acpc, postfreesurfer, [('out_file', 'in_t1')]),
-#          (copy_t2w_res, postfreesurfer, [('dest', 'in_t1_dc')]),
-#          (identity_warpfield, postfreesurfer, [('merged_file', 'in_warpfield')]),
-#          (identity_biasfield, postfreesurfer, [('out_file', 'in_biasfield')]),
-#          (copy_warpfield, postfreesurfer, [('dest', 'in_t2warpfield')]),
-#          (resample_mask, postfreesurfer, [('out_file', 'in_wmparc')]),
-#          (mask_t1w, postfreesurfer, [('out_file', 'in_t1brain')]),
-#          (mask_t2w, postfreesurfer, [('out_file', 'in_t2brain')]),
-#          (identity_matrix, postfreesurfer, [('out_file', 'in_t2_to_t1')])]
-#     )
-#     # transform functionals to final space
-#     # @TODO leverage SELECT and RENAME utilities with Don's information. In
-#     #  the interim, functional data is simply named as task-BOLD##
-#     wf.connect(
-#         [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
-#          (convert_func, select_first, [('out_file', 'inlist')]),
-#          (convert_t1, fs_to_fmri, [('out_file', 'in_file')]),
-#          (select_first, fs_to_fmri, [('out', 'reference')]),
-#          (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
-#          (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
-#          (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
-#          (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
-#          (convert_func, apply_warpfield, [('out_file', 'in_file')]),
-#          (convert_mask, warp_mask, [('out_file', 'in_file')]),
-#          (postfreesurfer, warp_mask, [('out_warp', 'field_file')]),
-#          (warp_mask, mask_func, [('out_file', 'mask_file')]),
-#          (apply_warpfield, mask_func, [('out_file', 'in_file')])]
-#     )
-#     # connect fmrisurface
-#     # there are more implicit connections, but these suffice dependency graph
-#     wf.connect(
-#         [(mask_func, rename, [('out_file', 'in_file')]),
-#          (rename, timeseries_mean, [('out_file', 'in_file')]),
-#          (rename, fmrisurface, [('out_file', 'in_fmri')]),
-#          (rename, basename, [('out_file', 'path')]),
-#          (basename, fmrisurface, [('out_name', 'fmriname')]),
-#          (timeseries_mean, renamesb, [('out_file', 'in_file')]),
-#          (renamesb, fmrisurface, [('out_file', 'in_sbref')])]
-#     )
-#     # connect executivesummary
-#     wf.connect(
-#         [(fmrisurface, executivesummary, [('out_file', 'in_files')])]
-#     )
+    # connect postfreesurfer
+    # there are more implicit connections, but these suffice dependency graph
+    wf.connect(
+        [(calc_acpc, postfreesurfer, [('out_file', 'in_t1')]),
+         (copy_t2w_res, postfreesurfer, [('dest', 'in_t1_dc')]),
+         (identity_warpfield, postfreesurfer, [('merged_file', 'in_warpfield')]),
+         (identity_biasfield, postfreesurfer, [('out_file', 'in_biasfield')]),
+         (copy_warpfield, postfreesurfer, [('dest', 'in_t2warpfield')]),
+         (resample_mask, postfreesurfer, [('out_file', 'in_wmparc')]),
+         (mask_t1w, postfreesurfer, [('out_file', 'in_t1brain')]),
+         (mask_t2w, postfreesurfer, [('out_file', 'in_t2brain')]),
+         (identity_matrix, postfreesurfer, [('out_file', 'in_t2_to_t1')])]
+    )
+    # transform functionals to final space
+    # @TODO leverage SELECT and RENAME utilities with Don's information. In
+    #  the interim, functional data is simply named as task-BOLD##
+    wf.connect(
+        [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
+         (convert_func, select_first, [('out_file', 'inlist')]),
+         (convert_t1, fs_to_fmri, [('out_file', 'in_file')]),
+         (select_first, fs_to_fmri, [('out', 'reference')]),
+         (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
+         (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
+         (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
+         (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
+         (convert_func, apply_warpfield, [('out_file', 'in_file')]),
+         (convert_mask, warp_mask, [('out_file', 'in_file')]),
+         (postfreesurfer, warp_mask, [('out_warp', 'field_file')]),
+         (warp_mask, mask_func, [('out_file', 'mask_file')]),
+         (apply_warpfield, mask_func, [('out_file', 'in_file')])]
+    )
+    # connect fmrisurface
+    # there are more implicit connections, but these suffice dependency graph
+    wf.connect(
+        [(mask_func, rename, [('out_file', 'in_file')]),
+         (rename, timeseries_mean, [('out_file', 'in_file')]),
+         (rename, fmrisurface, [('out_file', 'in_fmri')]),
+         (rename, basename, [('out_file', 'path')]),
+         (basename, fmrisurface, [('out_name', 'fmriname')]),
+         (timeseries_mean, renamesb, [('out_file', 'in_file')]),
+         (renamesb, fmrisurface, [('out_file', 'in_sbref')])]
+    )
+    # connect executivesummary
+    wf.connect(
+        [(fmrisurface, executivesummary, [('out_file', 'in_files')])]
+    )
 
     # draw workflow: output/daic2hcp/graph.png
     wf.write_graph(graph2use='orig', dotfilename='graph.dot')
