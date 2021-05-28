@@ -379,10 +379,6 @@ def generate_workflow(**inputs):
         fsl.ConvertWarp(relwarp=True, out_relwarp=True, reference=reference2mm),
         name='concat_warps'
     )
-    warp_mask = pe.Node(
-        fsl.ApplyWarp(ref_file=reference2mm, interp='nn', relwarp=True),
-        name='warp_mask'
-    )
     mask_func = pe.Node(fsl.ApplyMask(), name='apply_mask')
     apply_warpfield = pe.Node(
         fsl.ApplyWarp(ref_file=reference2mm, interp='spline', relwarp=True),
@@ -485,9 +481,7 @@ def generate_workflow(**inputs):
          (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
          (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
          (convert_func, apply_warpfield, [('out_file', 'in_file')]),
-         (convert_mask, warp_mask, [('out_file', 'in_file')]),
-         (postfreesurfer, warp_mask, [('out_warp', 'field_file')]),
-         (warp_mask, mask_func, [('out_file', 'mask_file')]),
+         (postfreesurfer, mask_func, [('out_warp', 'mask_file')]),
          (apply_warpfield, mask_func, [('out_file', 'in_file')])]
     )
     # connect fmrisurface
