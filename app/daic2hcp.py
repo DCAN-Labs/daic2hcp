@@ -482,7 +482,7 @@ def generate_workflow(**inputs):
     wf.connect(
         [(fs_to_fmri, t1w_flirt_xfm, [('out_matrix_file', 'src')]),
          (t1w_flirt_xfm, make_bold_mask, [('dest', 'in_matrix_file')]),
-         (hcp_spec, make_bold_mask, [('wmparc_1mm', 'in_file')]),
+         (resample_mask, make_bold_mask, [('out_file', 'in_file')]),
          (convert_func, make_bold_mask, [('out_file', 'reference')])])
 
     wf.connect(
