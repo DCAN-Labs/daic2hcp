@@ -478,13 +478,6 @@ def generate_workflow(**inputs):
     # transform functionals to final space
     # @TODO leverage SELECT and RENAME utilities with Don's information. In
     #  the interim, functional data is simply named as task-BOLD##
-    #first make mask for BOLD data
-    wf.connect(
-        [(fs_to_fmri, t1w_flirt_xfm, [('out_matrix_file', 'src')]),
-         (t1w_flirt_xfm, make_bold_mask, [('dest', 'in_matrix_file')]),
-         (resample_mask, make_bold_mask, [('out_file', 'in_file')]),
-         (convert_func, make_bold_mask, [('out_file', 'reference')])])
-
     wf.connect(
         [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
          (convert_func, select_first, [('out_file', 'inlist')]),
@@ -493,6 +486,10 @@ def generate_workflow(**inputs):
          (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
          (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
          (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
+         (fs_to_fmri, t1w_flirt_xfm, [('out_matrix_file', 'src')]),
+         (t1w_flirt_xfm, make_bold_mask, [('dest', 'in_matrix_file')]),
+         (resample_mask, make_bold_mask, [('out_file', 'in_file')]),
+         (convert_func, make_bold_mask, [('out_file', 'reference')]),
          (make_bold_mask, mask_func, [('out_file', 'mask_file')]),
          (convert_func, mask_func, [('out_file', 'in_file')]),
          (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
