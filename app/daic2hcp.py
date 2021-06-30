@@ -373,12 +373,6 @@ def generate_workflow(**inputs):
     )
 
     # functional transforms
-    select_first = pe.JoinNode(
-        utility.Select(index=[0]),
-        joinsource='input_func_spec',
-        joinfield='inlist',
-        name='select_first'
-    )
     fs_to_fmri = pe.Node(fsl.FLIRT(cost='mutualinfo', dof=6), name='fs_to_func')
     fmri_to_fs = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='func_to_fs')
     concat_warps = pe.Node(
@@ -479,9 +473,8 @@ def generate_workflow(**inputs):
     #  the interim, functional data is simply named as task-BOLD##
     wf.connect(
         [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
-         (convert_func, select_first, [('out_file', 'inlist')]),
          (convert_t1, fs_to_fmri, [('out_file', 'in_file')]),
-         (select_first, fs_to_fmri, [('out', 'reference')]),
+         (convert_func, fs_to_fmri, [('out_file', 'reference')]),
          (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
          (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
          (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
