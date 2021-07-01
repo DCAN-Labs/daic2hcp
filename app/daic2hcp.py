@@ -51,7 +51,6 @@ def generate_parser():
 
     return parser
 
-
 def main():
     """
     main script
