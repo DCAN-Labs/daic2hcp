@@ -73,7 +73,7 @@ RUN apt-get clean \
 RUN apt-get update && apt-get install -yq --no-install-recommends \
     ants \
     connectome-workbench \
-    fsl-5.0-core
+    fsl-6.0.1
 
 RUN echo "Downloading C3D ..." \
     && mkdir /opt/c3d \
