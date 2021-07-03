@@ -65,7 +65,7 @@ RUN apt-get clean \
     && if [ ! -f "$ND_ENTRYPOINT" ]; then \
          echo '#!/usr/bin/env bash' >> $ND_ENTRYPOINT \
          && echo 'set +x' >> $ND_ENTRYPOINT \
-         && echo 'if [ -z "$*" ]; then /usr/bin/env bash; else $*; fi' >> $ND_ENTRYPOINT; \
+  .0       && echo 'if [ -z "$*" ]; then /usr/bin/env bash; else $*; fi' >> $ND_ENTRYPOINT; \
        fi \
     && chmod -R 777 /neurodocker && chmod a+s /neurodocker
 
@@ -73,7 +73,7 @@ RUN apt-get clean \
 RUN apt-get update && apt-get install -yq --no-install-recommends \
     ants \
     connectome-workbench \
-    fsl-6.0.1
+    fsl-6.0.0
 
 RUN echo "Downloading C3D ..." \
     && mkdir /opt/c3d \
