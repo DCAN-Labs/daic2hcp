@@ -84,9 +84,10 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 #For OS, chose option "Linux-Container Distributon 1 Docker"
 #https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-feeds.tar.gz
 #https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation/Linux
+#https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-sources.tar.gz
 
 RUN echo "Downloading FSL ..." \
-    && curl -sSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-sources.tar.gz \
+    && curl -sSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-feeds.tar.gz \
     | tar zx -C /opt \
     --exclude=fsl/bin/mist \
     --exclude=fsl/bin/fslview \
