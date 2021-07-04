@@ -85,8 +85,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 #https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-feeds.tar.gz
 #https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation/Linux
 
-RUN echo "Downloading FSL ..." https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-sources.tar.gz \
-    && curl -sSL --retry 5  \
+RUN echo "Downloading FSL ..." \
+    && curl -sSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-sources.tar.gz \
     | tar zx -C /opt \
     --exclude=fsl/bin/mist \
     --exclude=fsl/bin/fslview \
