@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
         locales \
         make \
         m4 \
+	python2 \
         python-pip \
         python3 \
         python3-dev \
@@ -81,21 +82,9 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 # https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence
 #-----------------------------------------------------------
 
-#For OS, chose option "Linux-Container Distributon 1 Docker"
-#https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-feeds.tar.gz
-#https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation/Linux
-#https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-sources.tar.gz
-
 RUN echo "Downloading FSL ..." \
-    && curl -sSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.4-feeds.tar.gz \
-    | tar zx -C /opt \
-    --exclude=fsl/bin/mist \
-    --exclude=fsl/bin/fslview \
-    --exclude=fsl/bin/fsleyes \
-    --exclude=fsl/bin/possum \
-    --exclude=fsl/data/possum \
-    --exclude=fsl/data/mist \
-    --exclude=fsl/data/first \
+    && wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py \
+    && python2 fslinstaller.py \
     && sed -i '$iecho Some packages in this Docker container are non-free' $ND_ENTRYPOINT \
     && sed -i '$iecho If you are considering commercial use of this container, please consult the relevant license:' $ND_ENTRYPOINT \
     && sed -i '$iecho https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence' $ND_ENTRYPOINT \
