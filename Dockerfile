@@ -84,7 +84,7 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 
 RUN echo "Downloading FSL ..." \
     && wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py \
-    && python2 fslinstaller.py -d /opt/fsl
+    && python2 fslinstaller.py
 
 ENV FSLDIR=/opt/fsl \
     FSL_DIR=/opt/fsl \
