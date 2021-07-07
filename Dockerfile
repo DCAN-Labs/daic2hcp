@@ -76,16 +76,21 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
     connectome-workbench
 
 #-----------------------------------------------------------
-# Install FSL
+# Install FSL v5.0.10
 # FSL is non-free. If you are considering commerical use
 # of this Docker image, please consult the relevant license:
 # https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence
 #-----------------------------------------------------------
-
+RUN apt-get update -qq && apt-get install -yq --no-install-recommends bc dc libfontconfig1 libfreetype6 libgl1-mesa-dev libglu1-mesa-dev libgomp1 libice6 libxcursor1 libxft2 libxinerama1 libxrandr2 libxrender1 libxt6 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN echo "Downloading FSL ..." \
-    && wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py \
-    && python2 fslinstaller.py -d /opt/fsl
-
+    && curl -sSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.10-centos6_64.tar.gz \
+    | tar zx -C /opt \
+    && sed -i '$iecho Some packages in this Docker container are non-free' $ND_ENTRYPOINT \
+    && sed -i '$iecho If you are considering commercial use of this container, please consult the relevant license:' $ND_ENTRYPOINT \
+    && sed -i '$iecho https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence' $ND_ENTRYPOINT \
+    && sed -i '$isource $FSLDIR/etc/fslconf/fsl.sh' $ND_ENTRYPOINT
 ENV FSLDIR=/opt/fsl \
     FSL_DIR=/opt/fsl \
     PATH=/opt/fsl/bin:$PATH
