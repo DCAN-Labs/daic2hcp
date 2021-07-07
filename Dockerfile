@@ -82,13 +82,13 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 # https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence
 #-----------------------------------------------------------
 
-RUN echo "Downloading FSL ..." \
-    && wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py \
-    && python2 fslinstaller.py
-
 ENV FSLDIR=/opt/fsl \
     FSL_DIR=/opt/fsl \
     PATH=/opt/fsl/bin:$PATH
+
+RUN echo "Downloading FSL ..." \
+    && wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py \
+    && python2 fslinstaller.py
 
 RUN echo "Downloading C3D ..." \
     && mkdir /opt/c3d \
