@@ -37,7 +37,6 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
         locales \
         make \
         m4 \
-        python2.7 \
         python-pip \
         python3 \
         python3-dev \

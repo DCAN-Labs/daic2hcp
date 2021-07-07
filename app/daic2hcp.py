@@ -480,7 +480,7 @@ def generate_workflow(**inputs):
     wf.connect(
         [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
          (convert_func, select_first, [('out_file', 'inlist')]),
-         (convert_t1, fs_to_fmri, [('out_file', 'in_file')]),
+         (calc_acpc, fs_to_fmri, [('out_file', 'in_file')]),
          (select_first, fs_to_fmri, [('out', 'reference')]),
          (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
          (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
