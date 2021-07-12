@@ -17,6 +17,8 @@ import nipype
 import nipype.pipeline.engine as pe
 from nipype.interfaces import (freesurfer, fsl, utility)
 
+import sys, os
+sys.path.append('/app/')
 from hcp_nodes import (PostFreeSurfer, FMRISurface, ExecutiveSummary)
 
 
