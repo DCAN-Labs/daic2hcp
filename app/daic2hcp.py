@@ -139,7 +139,7 @@ def create_hcp_nodes(output_dir, subject_id):
     usestudytemplate = 'false'
     # connecting filenames
     out_warp = os.path.join(output_dir, 'MNINonLinear', 'xfms',
-                            'fs2standard.nii.gz')
+                            'acpc_dc2standard.nii.gz')
 
     postfreesurfer = PostFreeSurfer(
         path=output_dir,
