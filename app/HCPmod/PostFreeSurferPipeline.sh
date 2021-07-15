@@ -151,7 +151,7 @@ log_Msg "Atlas Registration was taken out of PreFreeSurfer and reimplemented her
 
 
 #Create FreeSurfer Brain Mask. (Removed from FreeSurfer2CaretConvertAndRegisterNonlinear.sh)
-# mri_convert -rt nearest -rl "$T1wFolder"/"$T1wRestoreImage".nii.gz "$FreeSurferFolder"/mri/wmparc.mgz "$T1wFolder"/wmparc_1mm.nii.gz
+# mri_convert --out_orientation RAS -rt nearest -rl "$T1wFolder"/"$T1wRestoreImage".nii.gz "$FreeSurferFolder"/mri/wmparc.mgz "$T1wFolder"/wmparc_1mm.nii.gz
 fslmaths "$T1wFolder"/wmparc_1mm.nii.gz -bin -dilD -dilD -dilD -ero -ero "$T1wFolder"/"$T1wImageBrainMask"_1mm.nii.gz
 ${CARET7DIR}/wb_command -volume-fill-holes "$T1wFolder"/"$T1wImageBrainMask"_1mm.nii.gz "$T1wFolder"/"$T1wImageBrainMask"_1mm.nii.gz
 fslmaths "$T1wFolder"/"$T1wImageBrainMask"_1mm.nii.gz -bin "$T1wFolder"/"$T1wImageBrainMask"_1mm.nii.gz

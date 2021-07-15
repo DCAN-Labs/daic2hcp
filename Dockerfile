@@ -54,7 +54,8 @@ RUN pip3 install setuptools wheel && \
 
 # get neurodebian repos
 RUN wget -O- http://neuro.debian.net/lists/bionic.us-ca.full >> /etc/apt/sources.list.d/neurodebian.sources.list
-RUN apt-key adv --recv-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || \
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv 0xA5D32F012649A5A9 || \
+    apt-key adv --recv-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || \
     apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9
 RUN apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
@@ -64,16 +65,40 @@ RUN apt-get clean \
     && if [ ! -f "$ND_ENTRYPOINT" ]; then \
          echo '#!/usr/bin/env bash' >> $ND_ENTRYPOINT \
          && echo 'set +x' >> $ND_ENTRYPOINT \
-         && echo 'if [ -z "$*" ]; then /usr/bin/env bash; else $*; fi' >> $ND_ENTRYPOINT; \
+  .0       && echo 'if [ -z "$*" ]; then /usr/bin/env bash; else $*; fi' >> $ND_ENTRYPOINT; \
        fi \
     && chmod -R 777 /neurodocker && chmod a+s /neurodocker
 
 # workbench
 RUN apt-get update && apt-get install -yq --no-install-recommends \
     ants \
+<<<<<<< HEAD
     connectome-workbench \
     fsl-5.0-core \
     fsl-atlases
+=======
+    connectome-workbench
+
+#-----------------------------------------------------------
+# Install FSL v5.0.10
+# FSL is non-free. If you are considering commerical use
+# of this Docker image, please consult the relevant license:
+# https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence
+#-----------------------------------------------------------
+RUN apt-get update -qq && apt-get install -yq --no-install-recommends bc dc libfontconfig1 libfreetype6 libgl1-mesa-dev libglu1-mesa-dev libgomp1 libice6 libxcursor1 libxft2 libxinerama1 libxrandr2 libxrender1 libxt6 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN echo "Downloading FSL ..." \
+    && curl -sSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-5.0.10-centos6_64.tar.gz \
+    | tar zx -C /opt \
+    && sed -i '$iecho Some packages in this Docker container are non-free' $ND_ENTRYPOINT \
+    && sed -i '$iecho If you are considering commercial use of this container, please consult the relevant license:' $ND_ENTRYPOINT \
+    && sed -i '$iecho https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/Licence' $ND_ENTRYPOINT \
+    && sed -i '$isource $FSLDIR/etc/fslconf/fsl.sh' $ND_ENTRYPOINT
+ENV FSLDIR=/opt/fsl \
+    FSL_DIR=/opt/fsl \
+    PATH=/opt/fsl/bin:$PATH
+>>>>>>> develop
 
 RUN echo "Downloading C3D ..." \
     && mkdir /opt/c3d \
