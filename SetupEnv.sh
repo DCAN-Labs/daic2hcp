@@ -2,9 +2,8 @@
 
 # Set up FSL (if not already done so in the running environment)
 # Uncomment the following 2 lines (remove the leading #) and correct the FSLDIR setting for your setup
-export FSLDIR=/etc/fsl/5.0
-. ${FSLDIR}/fsl.sh > /dev/null 2>&1
-
+export FSLDIR=/opt/fsl
+. ${FSLDIR}/etc/fslconf/fsl.sh > /dev/null 2>&1
 
 # Let FreeSurfer know what version of FSL to use
 # FreeSurfer uses FSL_DIR instead of FSLDIR to determine the FSL version

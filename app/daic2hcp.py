@@ -51,7 +51,6 @@ def generate_parser():
 
     return parser
 
-
 def main():
     """
     main script
@@ -140,7 +139,7 @@ def create_hcp_nodes(output_dir, subject_id):
     usestudytemplate = 'false'
     # connecting filenames
     out_warp = os.path.join(output_dir, 'MNINonLinear', 'xfms',
-                            'fs2standard.nii.gz')
+                            'acpc_dc2standard.nii.gz')
 
     postfreesurfer = PostFreeSurfer(
         path=output_dir,
@@ -329,19 +328,35 @@ def generate_workflow(**inputs):
     )
 
     # mri convert
-    convert_t1 = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
+    convert_t1 = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                               out_orientation='RAS'),
                          name='convert_t1')
-    convert_t2 = convert_t1.clone(name='convert_t2')
-    convert_mask = convert_t1.clone(name='convert_mask')
-    convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz'),
+    convert_t2 = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                               out_orientation='RAS'),
+                         name='convert_t2')
+    convert_mask = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                                 resample_type='nearest',
+                                                 out_orientation='RAS'),
+                           name='convert_mask')
+    convert_func = pe.Node(freesurfer.MRIConvert(out_type='niigz',
+                                                 out_orientation='RAS'),
                            name='convert_func')
 
+<<<<<<< HEAD
     # fsl reorient to standard
     reorient_t1 = pe.Node(fsl.Reorient2Std(), name='reorient_t1')
     reorient_t2 = pe.Node(fsl.Reorient2Std(), name='reorient_t2')
     reorient_mask = pe.Node(fsl.Reorient2Std(), name='reorient_mask')
     reorient_func = pe.Node(fsl.Reorient2Std(), name='reorient_func')
     
+=======
+    # make mask for BOLD data (Note: this node might be better organized elsewhere)
+    make_bold_mask = pe.Node(
+        fsl.FLIRT(reference=reference, apply_xfm=True),
+        name='make_bold_mask'
+    )
+
+>>>>>>> develop
     # acpc alignment
     calc_acpc = pe.Node(
         fsl.FLIRT(reference=reference, dof=6, interp='spline'),
@@ -372,15 +387,12 @@ def generate_workflow(**inputs):
         joinfield='inlist',
         name='select_first'
     )
+
     fs_to_fmri = pe.Node(fsl.FLIRT(cost='mutualinfo', dof=6), name='fs_to_func')
     fmri_to_fs = pe.Node(fsl.ConvertXFM(invert_xfm=True), name='func_to_fs')
     concat_warps = pe.Node(
         fsl.ConvertWarp(relwarp=True, out_relwarp=True, reference=reference2mm),
         name='concat_warps'
-    )
-    warp_mask = pe.Node(
-        fsl.ApplyWarp(ref_file=reference2mm, interp='nn', relwarp=True),
-        name='warp_mask'
     )
     mask_func = pe.Node(fsl.ApplyMask(), name='apply_mask')
     apply_warpfield = pe.Node(
@@ -479,24 +491,39 @@ def generate_workflow(**inputs):
     #  the interim, functional data is simply named as task-BOLD##
     wf.connect(
         [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
+<<<<<<< HEAD
          (convert_func, reorient_func, [('out_file', 'in_file')]),
          (reorient_func, select_first, [('out_file', 'inlist')]),
          (reorient_t1, fs_to_fmri, [('out_file', 'in_file')]),
+=======
+         (convert_func, select_first, [('out_file', 'inlist')]),
+         (calc_acpc, fs_to_fmri, [('out_file', 'in_file')]),
+>>>>>>> develop
          (select_first, fs_to_fmri, [('out', 'reference')]),
          (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
          (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
          (fmri_to_fs, concat_warps, [('out_file', 'premat')]),
+         (fs_to_fmri, make_bold_mask, [('out_matrix_file', 'in_matrix_file')]),
+         (resample_mask, make_bold_mask, [('out_file', 'in_file')]),
+         (convert_func, make_bold_mask, [('out_file', 'reference')]),
+         (make_bold_mask, mask_func, [('out_file', 'mask_file')]),
+         (convert_func, mask_func, [('out_file', 'in_file')]),
          (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
+<<<<<<< HEAD
          (reorient_func, apply_warpfield, [('out_file', 'in_file')]),
          (reorient_mask, warp_mask, [('out_file', 'in_file')]),
          (postfreesurfer, warp_mask, [('out_warp', 'field_file')]),
          (warp_mask, mask_func, [('out_file', 'mask_file')]),
          (apply_warpfield, mask_func, [('out_file', 'in_file')])]
+=======
+         (mask_func, apply_warpfield, [('out_file', 'in_file')])]
+>>>>>>> develop
     )
+
     # connect fmrisurface
     # there are more implicit connections, but these suffice dependency graph
     wf.connect(
-        [(mask_func, rename, [('out_file', 'in_file')]),
+        [(apply_warpfield, rename, [('out_file', 'in_file')]),
          (rename, timeseries_mean, [('out_file', 'in_file')]),
          (rename, fmrisurface, [('out_file', 'in_fmri')]),
          (rename, basename, [('out_file', 'path')]),
