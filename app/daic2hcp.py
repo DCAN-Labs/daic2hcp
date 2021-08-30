@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-__doc__ = """converts from DAIC fMRI preprocessing outputs to surface-based HCP 
+__doc__ = """converts from DAIC fMRI preprocessing outputs to surface-based HCP
     ouputs.
 
-    converts all FreeSurfer outputs into CIFTIs, computes a nonlinear mapping 
-    to MNI space using ANTs as well as surface-based Conte69/fsLR and projects 
+    converts all FreeSurfer outputs into CIFTIs, computes a nonlinear mapping
+    to MNI space using ANTs as well as surface-based Conte69/fsLR and projects
     fMRI data onto fsLR/MNI grayordinates."""
 __version__ = 'v0.0.0'
 
@@ -28,9 +28,9 @@ def generate_parser():
     parser = argparse.ArgumentParser(
         prog='daic2hcp',
         description=__doc__,
-        epilog="""example: daic2hcp.py /home/user/foobar/daic_convert 
-        --mriproc=/home/user/foobar/MRIPROC 
-        --boldproc=/home/user/foobar/BOLDPROC 
+        epilog="""example: daic2hcp.py /home/user/foobar/daic_convert
+        --mriproc=/home/user/foobar/MRIPROC
+        --boldproc=/home/user/foobar/BOLDPROC
         --fsurf=/home/user/foobar/FSURF --ncpus 10"""
     )
     parser.add_argument('output_dir', default='./files', help='path to outputs')
@@ -342,21 +342,12 @@ def generate_workflow(**inputs):
                                                  out_orientation='RAS'),
                            name='convert_func')
 
-<<<<<<< HEAD
-    # fsl reorient to standard
-    reorient_t1 = pe.Node(fsl.Reorient2Std(), name='reorient_t1')
-    reorient_t2 = pe.Node(fsl.Reorient2Std(), name='reorient_t2')
-    reorient_mask = pe.Node(fsl.Reorient2Std(), name='reorient_mask')
-    reorient_func = pe.Node(fsl.Reorient2Std(), name='reorient_func')
-    
-=======
     # make mask for BOLD data (Note: this node might be better organized elsewhere)
     make_bold_mask = pe.Node(
         fsl.FLIRT(reference=reference, apply_xfm=True),
         name='make_bold_mask'
     )
 
->>>>>>> develop
     # acpc alignment
     calc_acpc = pe.Node(
         fsl.FLIRT(reference=reference, dof=6, interp='spline'),
@@ -491,14 +482,8 @@ def generate_workflow(**inputs):
     #  the interim, functional data is simply named as task-BOLD##
     wf.connect(
         [(input_func_spec, convert_func, [('fmri_file', 'in_file')]),
-<<<<<<< HEAD
-         (convert_func, reorient_func, [('out_file', 'in_file')]),
-         (reorient_func, select_first, [('out_file', 'inlist')]),
-         (reorient_t1, fs_to_fmri, [('out_file', 'in_file')]),
-=======
          (convert_func, select_first, [('out_file', 'inlist')]),
          (calc_acpc, fs_to_fmri, [('out_file', 'in_file')]),
->>>>>>> develop
          (select_first, fs_to_fmri, [('out', 'reference')]),
          (fs_to_fmri, fmri_to_fs, [('out_matrix_file', 'in_file')]),
          (postfreesurfer, concat_warps, [('out_warp', 'warp1')]),
@@ -509,15 +494,7 @@ def generate_workflow(**inputs):
          (make_bold_mask, mask_func, [('out_file', 'mask_file')]),
          (convert_func, mask_func, [('out_file', 'in_file')]),
          (concat_warps, apply_warpfield, [('out_file', 'field_file')]),
-<<<<<<< HEAD
-         (reorient_func, apply_warpfield, [('out_file', 'in_file')]),
-         (reorient_mask, warp_mask, [('out_file', 'in_file')]),
-         (postfreesurfer, warp_mask, [('out_warp', 'field_file')]),
-         (warp_mask, mask_func, [('out_file', 'mask_file')]),
-         (apply_warpfield, mask_func, [('out_file', 'in_file')])]
-=======
          (mask_func, apply_warpfield, [('out_file', 'in_file')])]
->>>>>>> develop
     )
 
     # connect fmrisurface
