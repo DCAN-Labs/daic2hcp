@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-__doc__ = """converts from DAIC fMRI preprocessing outputs to surface-based HCP
+__doc__ = """converts from DAIC fMRI preprocessing outputs to surface-based HCP 
     ouputs.
 
-    converts all FreeSurfer outputs into CIFTIs, computes a nonlinear mapping
-    to MNI space using ANTs as well as surface-based Conte69/fsLR and projects
+    converts all FreeSurfer outputs into CIFTIs, computes a nonlinear mapping 
+    to MNI space using ANTs as well as surface-based Conte69/fsLR and projects 
     fMRI data onto fsLR/MNI grayordinates."""
 __version__ = 'v0.0.0'
 
@@ -28,9 +28,9 @@ def generate_parser():
     parser = argparse.ArgumentParser(
         prog='daic2hcp',
         description=__doc__,
-        epilog="""example: daic2hcp.py /home/user/foobar/daic_convert
-        --mriproc=/home/user/foobar/MRIPROC
-        --boldproc=/home/user/foobar/BOLDPROC
+        epilog="""example: daic2hcp.py /home/user/foobar/daic_convert 
+        --mriproc=/home/user/foobar/MRIPROC 
+        --boldproc=/home/user/foobar/BOLDPROC 
         --fsurf=/home/user/foobar/FSURF --ncpus 10"""
     )
     parser.add_argument('output_dir', default='./files', help='path to outputs')
@@ -403,7 +403,7 @@ def generate_workflow(**inputs):
     renamesb.inputs.path = os.path.abspath(output_dir)
 
     # identity transforms
-    identity_matrix = pe.Node(fsl.FLIRT(),
+    identity_matrix = pe.Node(fsl.preprocess.FLIRT(),
                               name='identity_matrix')  # t1 -> t1 matrix
     zeroes = pe.Node(fsl.BinaryMaths(operation='mul', operand_value=0),
                      name='zeroes')
@@ -432,20 +432,17 @@ def generate_workflow(**inputs):
     wf.connect(
         [(input_spec, convert_t1, [('t1w_file', 'in_file')]),
          (input_spec, convert_t2, [('t2w_file', 'in_file')]),
-         (input_spec, convert_mask, [('mask_file', 'in_file')]),
-         (convert_t1, reorient_t1, [('out_file', 'in_file')]),
-         (convert_t2, reorient_t2, [('out_file', 'in_file')]),
-         (convert_mask, reorient_mask, [('out_file', 'in_file')])]
+         (input_spec, convert_mask, [('mask_file', 'in_file')])]
     )
     # rigid align to acpc/MNI, apply mask
     wf.connect(
-        [(reorient_t1, calc_acpc, [('out_file', 'in_file')]),
+        [(convert_t1, calc_acpc, [('out_file', 'in_file')]),
          (calc_acpc, copy_xfm, [('out_matrix_file', 'src')]),
          (copy_xfm, apply_acpc, [('dest', 'in_matrix_file')]),
          (calc_acpc, apply_acpc_nn, [('out_matrix_file', 'in_matrix_file')]),
-         (reorient_t2, apply_acpc, [('out_file', 'in_file')]),
+         (convert_t2, apply_acpc, [('out_file', 'in_file')]),
          (apply_acpc, copy_t2w_res, [('out_file', 'src')]),
-         (reorient_mask, apply_acpc_nn, [('out_file', 'in_file')]),
+         (convert_mask, apply_acpc_nn, [('out_file', 'in_file')]),
          (calc_acpc, mask_t1w, [('out_file', 'in_file')]),
          (apply_acpc_nn, mask_t1w, [('out_file', 'mask_file')]),
          (apply_acpc, mask_t2w, [('out_file', 'in_file')]),
